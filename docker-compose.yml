@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: darkon-ai-backend
+    ports:
+      - "5001:5001"
+    environment:
+      - SECRET_KEY=darkon-production-cyber-key-2026
+      - JWT_SECRET_KEY=darkon-jwt-prod-secret
+    volumes:
+      - ./backend/darkon.db:/app/darkon.db
+    restart: always
+
+  frontend:
+    build: ./frontend
+    container_name: darkon-ai-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: always
