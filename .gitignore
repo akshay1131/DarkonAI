@@ -19,3 +19,6 @@ build/
 backend/.env.save
 backend/reports/*.pdf
 backend/utils/*.backup
+backend/.env.save
+backend/reports/*.pdf
+backend/utils/*.backup
