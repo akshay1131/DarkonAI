@@ -46,6 +46,19 @@ export const powergridAPI = {
   getAssets: (params) => API.get('/power-grid/assets', { params }),
 };
 
+export const sectorsAPI = {
+  getOverview: () => API.get('/sectors/overview'),
+  getAnalytics: () => API.get('/sectors/analytics'),
+  getUnifiedAssets: (params) => API.get('/sectors/assets', { params }),
+  getMitreKnowledge: (id) => API.get('/sectors/mitre-knowledge', { params: id ? { id } : {} }),
+  getHeatmap: () => API.get('/sectors/heatmap'),
+  getAlerts: () => API.get('/sectors/alerts'),
+  dismissAlert: () => API.post('/sectors/alerts/dismiss'),
+  getSectorDetail: (sectorId) => API.get(`/sectors/${sectorId}`),
+  triggerTestEvent: (payload) => API.post('/sectors/test-event', payload),
+};
+
+
 export const aiAPI = {
   analyzeThreat: (payload) => API.post('/ai/analyze-threat', payload),
   sendChatMessage: (message) => API.post('/ai/chatbot', { message }),

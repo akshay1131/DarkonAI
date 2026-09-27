@@ -124,3 +124,101 @@ class AuditLog(db.Model):
             'details': self.details,
             'timestamp': self.timestamp.isoformat() if self.timestamp else None
         }
+
+
+class SectorSecurityEvent(db.Model):
+    """
+    Stores security events across all monitored sectors:
+    Power Grid, Agriculture, Hospital, Education.
+    """
+    __tablename__ = 'sector_security_events'
+
+    id = db.Column(db.Integer, primary_key=True)
+    incident_id = db.Column(db.String(50), unique=True, index=True)
+    sector = db.Column(db.String(50), nullable=False, index=True)
+    asset = db.Column(db.String(120), nullable=False)
+    event = db.Column(db.String(150), nullable=False)
+    severity = db.Column(db.String(20), nullable=False, index=True)  # LOW, MEDIUM, HIGH, CRITICAL
+    risk_score = db.Column(db.Float, nullable=False, default=0.0)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    description = db.Column(db.Text, nullable=True)
+    detected_activity = db.Column(db.Text, nullable=True)
+    recommended_action = db.Column(db.Text, nullable=True)
+    alert_status = db.Column(db.String(30), default='ACTIVE')  # ACTIVE, RESOLVED, ACKNOWLEDGED
+    email_sent = db.Column(db.Boolean, default=False)
+    details_json = db.Column(db.Text, default='{}')
+
+    def to_dict(self):
+        import json
+        return {
+            'id': self.id,
+            'incident_id': self.incident_id,
+            'sector': self.sector,
+            'asset': self.asset,
+            'event': self.event,
+            'severity': self.severity,
+            'risk_score': self.risk_score,
+            'timestamp': self.timestamp.strftime("%d %B %Y, %I:%M %p") if self.timestamp else None,
+            'timestamp_iso': self.timestamp.isoformat() if self.timestamp else None,
+            'description': self.description,
+            'detected_activity': self.detected_activity,
+            'recommended_action': self.recommended_action,
+            'alert_status': self.alert_status,
+            'email_sent': self.email_sent,
+            'details': json.loads(self.details_json or '{}')
+        }
+
+
+class UnifiedAsset(db.Model):
+    """
+    Unified multi-sector cybersecurity asset model covering
+    Power Grid, Agriculture, Hospital, and Education.
+    """
+    __tablename__ = 'unified_assets'
+
+    id = db.Column(db.String(50), primary_key=True)
+    asset_name = db.Column(db.String(150), nullable=False, index=True)
+    sector = db.Column(db.String(50), nullable=False, index=True)  # Power Grid, Agriculture, Hospital, Education
+    asset_type = db.Column(db.String(80), nullable=False)
+    location = db.Column(db.String(150), nullable=True)
+    district = db.Column(db.String(50), nullable=True, index=True)
+    ip_address = db.Column(db.String(50), nullable=True)
+    hostname = db.Column(db.String(100), nullable=True)
+    criticality = db.Column(db.String(20), default='MEDIUM')  # CRITICAL, HIGH, MEDIUM, LOW
+    status = db.Column(db.String(20), default='HEALTHY')      # HEALTHY, WARNING, DEGRADED, CRITICAL
+    risk_score = db.Column(db.Float, default=15.0)
+    last_seen = db.Column(db.String(50), nullable=True)
+    protocol = db.Column(db.String(50), nullable=True)
+    vendor = db.Column(db.String(80), nullable=True)
+    model = db.Column(db.String(80), nullable=True)
+    firmware = db.Column(db.String(50), nullable=True)
+    open_ports_json = db.Column(db.Text, default='[]')
+    vulnerabilities_json = db.Column(db.Text, default='[]')
+    mitre_techniques_json = db.Column(db.Text, default='[]')
+    extra_metadata_json = db.Column(db.Text, default='{}')
+
+    def to_dict(self):
+        import json
+        return {
+            'id': self.id,
+            'name': self.asset_name,
+            'asset_name': self.asset_name,
+            'sector': self.sector,
+            'asset_type': self.asset_type,
+            'location': self.location,
+            'district': self.district,
+            'ip_address': self.ip_address,
+            'hostname': self.hostname,
+            'criticality': self.criticality,
+            'status': self.status,
+            'risk_score': self.risk_score,
+            'last_seen': self.last_seen,
+            'protocol': self.protocol,
+            'vendor': self.vendor,
+            'model': self.model,
+            'firmware': self.firmware,
+            'open_ports': json.loads(self.open_ports_json or '[]'),
+            'vulnerabilities': json.loads(self.vulnerabilities_json or '[]'),
+            'associated_mitre_techniques': json.loads(self.mitre_techniques_json or '[]')
+        }
+

@@ -1,20 +1,24 @@
 import smtplib
 import os
+from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
+
 
 class EmailNotifier:
     """
     Configurable SMTP Email Alert System.
     Dispatches automated Incident Reports (with PDF/JSON attachments) to configured SOC Administrator.
     """
-    def __init__(self, smtp_server=None, smtp_port=587, smtp_user=None, smtp_pass=None):
-        self.smtp_server = smtp_server or os.getenv("SMTP_SERVER", "smtp.gmail.com")
-        self.smtp_port = int(os.getenv("SMTP_PORT", smtp_port))
-        self.smtp_user = smtp_user or os.getenv("SMTP_USER", "")
-        self.smtp_pass = smtp_pass or os.getenv("SMTP_PASS", "")
+    def __init__(self, smtp_server=None, smtp_port=None, smtp_user=None, smtp_pass=None):
+        self.smtp_server = smtp_server or os.getenv("EMAIL_HOST") or os.getenv("SMTP_SERVER", "smtp.gmail.com")
+        self.smtp_port = int(smtp_port or os.getenv("EMAIL_PORT") or os.getenv("SMTP_PORT", 587))
+        self.smtp_user = smtp_user or os.getenv("EMAIL_USERNAME") or os.getenv("SMTP_USER", "")
+        self.smtp_pass = smtp_pass or os.getenv("EMAIL_PASSWORD") or os.getenv("SMTP_PASS", "")
+        self.alert_recipient = os.getenv("ALERT_EMAIL", "akshayjoji0@gmail.com")
+
 
     def send_incident_alert_email(self, recipient_email="akshayjoji0@gmail.com", incident_data=None, pdf_path=None):
         recipient = recipient_email or "akshayjoji0@gmail.com"
@@ -91,3 +95,62 @@ class EmailNotifier:
         else:
             print(f"[EmailNotifier Simulator] Configured recipient: {recipient}. SMTP credentials not set; email payload generated cleanly.")
             return True, f"Simulated alert email dispatched successfully to {recipient}"
+
+    def send_sector_alert_email(self, event_data, recipient_email=None):
+        """
+        Dispatches multi-sector security alert email to configured SOC administrator.
+        Fulfills DARKON AI requirement for immediate automated email reporting on HIGH and CRITICAL events.
+        """
+        recipient = recipient_email or self.alert_recipient or "akshayjoji0@gmail.com"
+        
+        sector = event_data.get('sector', 'Unknown Sector')
+        asset = event_data.get('asset', 'Critical Node')
+        event = event_data.get('event', 'Security Anomaly')
+        severity = event_data.get('severity', 'HIGH').upper()
+        risk_score = event_data.get('risk_score', 85.0)
+        timestamp = event_data.get('timestamp') or datetime.utcnow().strftime("%d %B %Y, %I:%M %p")
+        description = event_data.get('description', 'A high-risk security anomaly was intercepted.')
+        detected_activity = event_data.get('detected_activity', description)
+        recommended_action = event_data.get('recommended_action', 'Investigate the affected system and isolate it if required.')
+
+        subject = f"DARKON AI SECURITY ALERT - [{severity}] {sector}: {event}"
+
+        body_text = f"""DARKON AI SECURITY ALERT
+Sector: {sector}
+Asset: {asset}
+Event: {event}
+Severity: {severity}
+Risk Score: {risk_score}/100
+Timestamp: {timestamp}
+Description: {description}
+Detected Activity: {detected_activity}
+Recommended Action: {recommended_action}
+
+====================================================
+Darkon AI Autonomous Multi-Sector SOC Defense System
+Kerala Cyber Command Operations
+====================================================
+"""
+
+        msg = MIMEMultipart()
+        msg['From'] = self.smtp_user or "soc-alerts@darkon.ai"
+        msg['To'] = recipient
+        msg['Subject'] = subject
+        msg.attach(MIMEText(body_text, 'plain'))
+
+        if self.smtp_user and self.smtp_pass:
+            try:
+                server = smtplib.SMTP(self.smtp_server, self.smtp_port)
+                server.starttls()
+                server.login(self.smtp_user, self.smtp_pass)
+                server.send_message(msg)
+                server.quit()
+                print(f"[EmailNotifier] Security alert email successfully delivered to {recipient} via SMTP.")
+                return True, f"Alert email dispatched to {recipient}"
+            except Exception as e:
+                print(f"[EmailNotifier] SMTP Delivery Error: {e}. Fallback to simulated delivery log.")
+                return False, f"SMTP Error: {str(e)}"
+        else:
+            print(f"[EmailNotifier Simulation Log]\nTo: {recipient}\n{body_text}")
+            return True, f"Simulated alert email dispatched successfully to {recipient}"
+
